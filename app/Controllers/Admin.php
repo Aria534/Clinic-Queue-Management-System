@@ -127,4 +127,24 @@ class Admin extends BaseController
         $model->update($id, ['is_active' => $service['is_active'] ? 0 : 1]);
         return redirect()->back()->with('success', 'Service updated.');
     }
+
+    public function deleteAppointment()
+    {
+        $id = $this->request->getPost('id');
+
+        if (!$id) {
+            return redirect()->back()->with('error', 'Invalid appointment.');
+        }
+
+        $model = new AppointmentModel();
+        $appt  = $model->find($id);
+
+        if (!$appt || $appt['status'] !== 'completed') {
+            return redirect()->back()->with('error', 'Only completed appointments can be deleted.');
+        }
+
+        $model->delete($id);
+
+        return redirect()->back()->with('success', 'Appointment deleted successfully.');
+    }
 }

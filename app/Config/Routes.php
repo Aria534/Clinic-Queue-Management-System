@@ -23,13 +23,14 @@ $routes->get('logout',    'Auth::logout');
 
 // ── ADMIN (login required) ────────────────────────────────
 $routes->group('admin', ['filter' => 'auth:admin'], function ($routes) {
-    $routes->get('dashboard',                   'Admin::index');
-    $routes->get('appointments',                'Admin::appointments');
-    $routes->post('appointments/update',        'Admin::updateStatus');
-    $routes->get('queue',                       'Admin::queue');
-    $routes->post('queue/next',                 'Queue::next');
-    $routes->get('users',                       'Admin::users');
-    $routes->get('services',                    'Admin::services');
-    $routes->post('services/store',             'Admin::storeService');
-    $routes->post('services/toggle/(:num)',     'Admin::toggleService/$1');
+    $routes->get('dashboard',               'Admin::index');
+    $routes->get('appointments',            'Admin::appointments');
+    $routes->post('appointments/update',    'Admin::updateStatus');
+    $routes->post('appointments/delete',    'Admin::deleteAppointment');
+    $routes->get('queue',                   'Admin::queue');
+    $routes->post('queue/next',             'Queue::next');
+    $routes->get('users',                   'Admin::users');
+    $routes->get('services',               'Admin::services');
+    $routes->post('services/store',        'Admin::storeService');
+    $routes->post('services/toggle/(:num)','Admin::toggleService/$1');
 });
