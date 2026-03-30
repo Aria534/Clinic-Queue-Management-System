@@ -37,16 +37,13 @@
             <div class="mb-3">
               <label class="form-label fw-semibold small">Full Name</label>
               <input type="text" name="patient_name" class="form-control"
-                     placeholder="e.g. Juan dela Cruz" required
                      value="<?= old('patient_name') ?>"/>
             </div>
 
             <div class="mb-3">
               <label class="form-label fw-semibold small">Email Address</label>
               <input type="email" name="patient_email" class="form-control"
-                     placeholder="you@email.com" required
                      value="<?= old('patient_email') ?>"/>
-              <div class="form-text">Your queue ticket will be sent here.</div>
             </div>
 
             <div class="mb-3">

@@ -10,6 +10,9 @@ function render_patient_layout($page_title, $content) { ?>
   <title><?= htmlspecialchars($page_title) ?> | QueueMed</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+  <style>
+    * { font-family: Arial, sans-serif !important; }
+  </style>
 </head>
 <body class="bg-light">
 

@@ -7,17 +7,93 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
   <style>
+    body { background: #f0f4f8; }
+
     .queue-number { font-size: 6rem; font-weight: 800; line-height: 1; }
+
     .pulse { animation: pulse 2s infinite; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
-    .serving-glow { box-shadow: 0 0 30px rgba(25,135,84,.4); border: 2px solid #198754; }
+
+    .serving-glow {
+      box-shadow: 0 0 40px rgba(25,135,84,.5);
+      border: 3px solid #198754 !important;
+    }
+
+    #serving-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(25, 135, 84, 0.97);
+      z-index: 9999;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      animation: fadeInOverlay 0.4s ease;
+    }
+    #serving-overlay.show { display: flex; }
+    @keyframes fadeInOverlay { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+    .overlay-queue-number {
+      font-size: 10rem;
+      font-weight: 900;
+      color: #fff;
+      line-height: 1;
+      text-shadow: 0 4px 30px rgba(0,0,0,0.2);
+      animation: zoomPulse 1s ease-in-out infinite alternate;
+    }
+    @keyframes zoomPulse {
+      from { transform: scale(1); }
+      to   { transform: scale(1.06); }
+    }
+
+    .overlay-title {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+    .overlay-sub {
+      font-size: 1.1rem;
+      color: rgba(255,255,255,0.8);
+      margin-bottom: 2rem;
+    }
+    .overlay-dismiss {
+      background: #fff;
+      color: #198754;
+      border: none;
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 0.75rem 2rem;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+    .overlay-dismiss:hover { background: #e8f5e9; }
+
+    .card { border-radius: 1.5rem !important; }
   </style>
 </head>
-<body class="bg-light">
+<body>
+
+<div id="serving-overlay">
+  <div class="mb-3">
+    <i class="bi bi-bell-fill text-white" style="font-size:4rem; animation: pulse 1s infinite;"></i>
+  </div>
+  <div class="overlay-title">🎉 It's Your Turn!</div>
+  <div class="overlay-queue-number">
+    #<?= $appointment['queue_number'] ?>
+  </div>
+  <div class="overlay-sub">Please proceed to the consultation room now.</div>
+  <button class="overlay-dismiss" onclick="dismissOverlay()">
+    <i class="bi bi-check-circle"></i> OK, I'm going!
+  </button>
+</div>
 
 <nav class="navbar navbar-light bg-white border-bottom shadow-sm">
   <div class="container">
-    <a class="navbar-brand fw-bold text-primary" href="<?= base_url('patient/dashboard') ?>">
+    <!-- ✅ FIX 1: navbar brand now goes to home/booking page -->
+    <a class="navbar-brand fw-bold text-primary" href="<?= base_url('/') ?>">
       <i class="bi bi-clipboard2-pulse"></i> QueueMed
     </a>
     <span class="small text-muted" id="last-updated">Connecting...</span>
@@ -28,8 +104,7 @@
   <div class="row justify-content-center">
     <div class="col-md-6">
 
-      <!-- Main ticket card -->
-      <div class="card border-0 shadow text-center" id="ticket-card" style="border-radius:1.5rem; overflow:hidden;">
+      <div class="card border-0 shadow text-center" id="ticket-card">
 
         <div class="card-header py-4 bg-primary" id="ticket-header">
           <h4 class="text-white fw-bold mb-0">
@@ -38,24 +113,17 @@
           <p class="text-white-50 mb-0 small">QueueMed Clinic</p>
         </div>
 
-        <div class="card-body py-4" id="ticket-body">
-          <!-- Status Icon -->
+        <div class="card-body py-4">
           <div id="status-icon" class="mb-3">
             <i class="bi bi-hourglass-split text-primary" style="font-size:4rem;"></i>
           </div>
 
-          <!-- Status Message -->
-          <div id="status-message"></div>
+          <div id="status-alert" class="mx-3"></div>
 
-          <!-- Queue Number -->
           <div class="queue-number text-primary my-3" id="queue-number">
             #<?= $appointment['queue_number'] ?>
           </div>
 
-          <!-- Alert -->
-          <div id="status-alert" class="mx-3"></div>
-
-          <!-- Stats Row -->
           <div class="d-flex justify-content-center gap-4 my-3" id="stats-row">
             <div class="text-center">
               <h2 class="fw-bold text-danger mb-0" id="ahead-count"><?= $ahead ?></h2>
@@ -73,7 +141,6 @@
             </div>
           </div>
 
-          <!-- Appointment Details -->
           <div class="card bg-light border-0 text-start mx-2 mt-3" style="border-radius:1rem;">
             <div class="card-body">
               <h6 class="fw-bold mb-3"><i class="bi bi-calendar-check"></i> Appointment Details</h6>
@@ -102,12 +169,12 @@
             </div>
           </div>
 
-          <!-- Buttons -->
           <div class="mt-4 d-flex gap-2 justify-content-center">
-            <a href="<?= base_url('patient/dashboard') ?>" class="btn btn-outline-secondary">
-              <i class="bi bi-house"></i> Dashboard
+            <!-- ✅ FIX 2: button now goes to home/booking page -->
+            <a href="<?= base_url('/') ?>" class="btn btn-outline-secondary">
+              <i class="bi bi-plus-circle"></i> Get Another Number
             </a>
-            <button onclick="fetchStatus()" class="btn btn-primary" id="refresh-btn">
+            <button onclick="fetchStatus()" class="btn btn-primary">
               <i class="bi bi-arrow-clockwise"></i> Refresh
             </button>
           </div>
@@ -130,7 +197,19 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 const appointmentId = <?= $appointment['id'] ?>;
-const apiUrl = '<?= base_url('api/queue-status/') ?>' + appointmentId;
+const apiUrl        = '<?= base_url('api/queue-status/') ?>' + appointmentId;
+let   wasServing    = '<?= $appointment['status'] ?>' === 'serving';
+let   overlayShown  = false;
+
+function dismissOverlay() {
+  document.getElementById('serving-overlay').classList.remove('show');
+}
+
+function showServingOverlay() {
+  if (overlayShown) return;
+  overlayShown = true;
+  document.getElementById('serving-overlay').classList.add('show');
+}
 
 function updateUI(data) {
   const status     = data.status;
@@ -146,11 +225,9 @@ function updateUI(data) {
   const refreshTxt = document.getElementById('auto-refresh-text');
   const queueNum   = document.getElementById('queue-number');
 
-  // Update ahead count
   aheadCount.textContent = ahead;
   waitTime.textContent   = '~' + (ahead * 15);
 
-  // Update badge
   const badgeColors = {
     pending:   'bg-warning text-dark',
     confirmed: 'bg-primary',
@@ -159,22 +236,23 @@ function updateUI(data) {
     completed: 'bg-secondary',
     cancelled: 'bg-danger',
   };
-  badge.className = 'badge ' + (badgeColors[status] || 'bg-secondary');
+  badge.className   = 'badge ' + (badgeColors[status] || 'bg-secondary');
   badge.textContent = status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
 
-  // Update UI based on status
   if (status === 'serving') {
-    icon.innerHTML       = '<i class="bi bi-person-check-fill text-success" style="font-size:4rem;"></i>';
-    alert.innerHTML      = '<div class="alert alert-success fw-bold fs-5"><i class="bi bi-bell-fill"></i> It\'s Your Turn! Please proceed now.</div>';
-    queueNum.className   = 'queue-number text-success my-3';
+    if (!wasServing) showServingOverlay();
+    wasServing = true;
+
+    icon.innerHTML          = '<i class="bi bi-person-check-fill text-success" style="font-size:4rem;"></i>';
+    alert.innerHTML         = '<div class="alert alert-success fw-bold fs-5 pulse"><i class="bi bi-bell-fill"></i> It\'s Your Turn! Please proceed now.</div>';
+    queueNum.className      = 'queue-number text-success my-3';
     card.classList.add('serving-glow');
     header.style.background = '#198754';
     statsRow.classList.add('d-none');
     refreshTxt.classList.add('d-none');
-    // Play sound
-    playBeep();
 
   } else if (status === 'completed') {
+    wasServing = false;
     icon.innerHTML  = '<i class="bi bi-check-circle-fill text-secondary" style="font-size:4rem;"></i>';
     alert.innerHTML = '<div class="alert alert-secondary">Your appointment is completed. Thank you!</div>';
     statsRow.classList.add('d-none');
@@ -182,6 +260,7 @@ function updateUI(data) {
     clearInterval(window.pollInterval);
 
   } else if (status === 'cancelled') {
+    wasServing = false;
     icon.innerHTML  = '<i class="bi bi-x-circle-fill text-danger" style="font-size:4rem;"></i>';
     alert.innerHTML = '<div class="alert alert-danger">Your appointment was cancelled.</div>';
     statsRow.classList.add('d-none');
@@ -189,12 +268,13 @@ function updateUI(data) {
     clearInterval(window.pollInterval);
 
   } else {
-    // Waiting
-    icon.innerHTML = '<i class="bi bi-hourglass-split text-primary" style="font-size:4rem;"></i>';
+    wasServing   = false;
+    overlayShown = false;
+    icon.innerHTML          = '<i class="bi bi-hourglass-split text-primary" style="font-size:4rem;"></i>';
     statsRow.classList.remove('d-none');
     card.classList.remove('serving-glow');
     header.style.background = '#0d6efd';
-    queueNum.className = 'queue-number text-primary my-3';
+    queueNum.className      = 'queue-number text-primary my-3';
 
     if (ahead === 0) {
       alert.innerHTML = '<div class="alert alert-success fw-semibold"><i class="bi bi-bell-fill"></i> You\'re next! Please be ready.</div>';
@@ -205,10 +285,8 @@ function updateUI(data) {
     }
   }
 
-  // Last updated
-  const now = new Date();
   document.getElementById('last-updated').textContent =
-    'Updated: ' + now.toLocaleTimeString();
+    'Updated: ' + new Date().toLocaleTimeString();
 }
 
 function fetchStatus() {
@@ -220,18 +298,7 @@ function fetchStatus() {
     });
 }
 
-function playBeep() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    osc.connect(ctx.destination);
-    osc.frequency.value = 880;
-    osc.start();
-    osc.stop(ctx.currentTime + 0.3);
-  } catch(e) {}
-}
-
-// Initial UI from PHP
+// Initial render from PHP
 updateUI({
   status: '<?= $appointment['status'] ?>',
   ahead:  <?= $ahead ?>

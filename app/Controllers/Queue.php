@@ -66,20 +66,6 @@ class Queue extends BaseController
         ]);
         $this->logQueue($db, $next['id'], 'serving', $adminId);
 
-        // STEP 3: Email — It's your turn
-        $this->sendEmail($next['patient_email'], $next['patient_name'], $next['queue_number'], 'called');
-
-        // STEP 4: Email — You're next (to the one after)
-        $upcoming = $model
-            ->where('appointment_date', $today)
-            ->whereIn('status', ['confirmed', 'in_queue', 'pending'])
-            ->orderBy('queue_number', 'ASC')
-            ->first();
-
-        if ($upcoming) {
-            $this->sendEmail($upcoming['patient_email'], $upcoming['patient_name'], $upcoming['queue_number'], 'next');
-        }
-
         return redirect()->to('/admin/queue')
             ->with('success', 'Now Serving #' . $next['queue_number'] . ' — ' . $next['patient_name']);
     }
@@ -92,35 +78,5 @@ class Queue extends BaseController
             'acted_by'       => $actedBy,
             'created_at'     => date('Y-m-d H:i:s'),
         ]);
-    }
-
-    private function sendEmail(string $to, string $name, string $queueNum, string $type): void
-    {
-        try {
-            $email = \Config\Services::email();
-
-            $subjects = [
-                'queued' => "You're in the queue! — QueueMed",
-                'called' => "It's Your Turn! Queue #{$queueNum} — QueueMed",
-                'next'   => "You're Next! Queue #{$queueNum} — QueueMed",
-                'done'   => "Consultation Complete — QueueMed",
-            ];
-
-            $messages = [
-                'queued' => "Hi {$name},<br><br>You have been added to the queue as <strong>#{$queueNum}</strong>. We will notify you when it's your turn.<br><br>Thank you for choosing QueueMed.",
-                'called' => "Hi {$name},<br><br>It's your turn! You are now being called as <strong>Queue #{$queueNum}</strong>.<br><br>Please proceed to the consultation room now.",
-                'next'   => "Hi {$name},<br><br>You are <strong>next in line</strong> as Queue #{$queueNum}. Please be ready and stay nearby.",
-                'done'   => "Hi {$name},<br><br>Your consultation (Queue #{$queueNum}) has been completed. Thank you for visiting QueueMed!",
-            ];
-
-            $email->setFrom('aeravrl@gmail.com', 'QueueMed');
-            $email->setTo($to);
-            $email->setMailType('html');
-            $email->setSubject($subjects[$type] ?? 'QueueMed Notification');
-            $email->setMessage($messages[$type] ?? '');
-            $email->send();
-        } catch (\Throwable $e) {
-            log_message('error', 'QueueMed email failed: ' . $e->getMessage());
-        }
     }
 }

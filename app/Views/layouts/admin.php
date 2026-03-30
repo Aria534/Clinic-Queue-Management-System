@@ -31,6 +31,7 @@ function render_layout($page_title, $active_page, $admin_name, $admin_role, $adm
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
   <style>
+    * { font-family: Arial, sans-serif !important; }
     .sidebar{width:240px;min-height:100vh;position:fixed;top:0;left:0;z-index:200;}
     .main-content{margin-left:240px;padding-top:60px;}
     .topbar{left:240px;right:0;height:60px;z-index:100;}

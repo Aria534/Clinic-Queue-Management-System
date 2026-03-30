@@ -21,6 +21,9 @@ $routes->get('login',     'Auth::index');
 $routes->post('login',    'Auth::login');
 $routes->get('logout',    'Auth::logout');
 
+// Patient Dashboard
+$routes->get('patient/dashboard', 'Patient::dashboard');
+
 // ── ADMIN (login required) ────────────────────────────────
 $routes->group('admin', ['filter' => 'auth:admin'], function ($routes) {
     $routes->get('dashboard',               'Admin::index');
