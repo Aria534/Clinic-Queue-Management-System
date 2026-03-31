@@ -219,8 +219,55 @@
 function checkTicket() {
   const input  = document.getElementById('checkInput').value.trim().toUpperCase();
   const result = document.getElementById('checkResult');
-  result.innerHTML = `<div class="alert alert-info small">Queue number <strong>${input}</strong> — feature coming soon.</div>`;
+
+  if (!input) {
+    result.innerHTML = `<div class="alert alert-warning small">Please enter a queue number.</div>`;
+    return;
+  }
+
+  result.innerHTML = `<div class="text-muted small">Checking...</div>`;
+
+  fetch(`<?= base_url('patient/check-queue') ?>?q=${encodeURIComponent(input)}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.found) {
+        const badgeMap = {
+          confirmed: 'bg-primary',
+          in_queue:  'bg-info text-dark',
+          serving:   'bg-success',
+          completed: 'bg-secondary',
+          cancelled: 'bg-danger',
+          pending:   'bg-warning text-dark',
+        };
+        const badgeClass = badgeMap[data.status] ?? 'bg-warning text-dark';
+
+        result.innerHTML = `
+          <div class="card border-0 shadow-sm mt-2">
+            <div class="card-body py-3">
+              <div class="fs-1 fw-bold text-primary font-monospace">#${data.queue_number}</div>
+              <span class="badge ${badgeClass} mb-2">${data.status_label}</span>
+              <div class="small text-muted mb-2">${data.service ?? ''}</div>
+              <hr class="my-2">
+              <div class="small">
+                <strong>${data.ahead}</strong> patient(s) ahead of you
+              </div>
+            </div>
+          </div>`;
+      } else {
+        result.innerHTML = `<div class="alert alert-danger small">Queue number <strong>${input}</strong> not found for today.</div>`;
+      }
+    })
+    .catch(() => {
+      result.innerHTML = `<div class="alert alert-danger small">Error checking queue. Try again.</div>`;
+    });
 }
+
+// Allow pressing Enter on the input
+document.addEventListener('DOMContentLoaded', function () {
+  document.getElementById('checkInput').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') checkTicket();
+  });
+});
 </script>
 
 <?= $this->endSection() ?>

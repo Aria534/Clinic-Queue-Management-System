@@ -57,7 +57,8 @@ class Queue extends BaseController
             ->first();
 
         if (!$next) {
-            return redirect()->to('/admin/queue')->with('success', 'Queue is empty for today.');
+            return redirect()->to('/admin/queue')
+                ->with('success', 'Queue is empty for today.');
         }
 
         $model->update($next['id'], [
@@ -68,6 +69,46 @@ class Queue extends BaseController
 
         return redirect()->to('/admin/queue')
             ->with('success', 'Now Serving #' . $next['queue_number'] . ' — ' . $next['patient_name']);
+    }
+
+    public function checkQueue()
+    {
+        $q     = strtoupper(trim($this->request->getGet('q')));
+        $model = new AppointmentModel();
+        $db    = \Config\Database::connect();
+        $today = date('Y-m-d');
+
+        $num = (int) preg_replace('/\D/', '', $q);
+
+        if (!$num) {
+            return $this->response->setJSON(['found' => false]);
+        }
+
+        $appt = $model
+            ->select('appointments.*, services.name as service_name')
+            ->join('services', 'services.id = appointments.service_id', 'left')
+            ->where('appointments.appointment_date', $today)
+            ->where('appointments.queue_number', $num)
+            ->first();
+
+        if (!$appt) {
+            return $this->response->setJSON(['found' => false]);
+        }
+
+        $ahead = $db->table('appointments')
+            ->where('appointment_date', $today)
+            ->where('queue_number <', $num)
+            ->whereIn('status', ['confirmed', 'in_queue', 'pending', 'serving'])
+            ->countAllResults();
+
+        return $this->response->setJSON([
+            'found'        => true,
+            'queue_number' => $appt['queue_number'],
+            'status'       => $appt['status'],
+            'status_label' => ucfirst(str_replace('_', ' ', $appt['status'])),
+            'service'      => $appt['service_name'] ?? null,
+            'ahead'        => $ahead,
+        ]);
     }
 
     private function logQueue($db, int $appointmentId, string $action, ?int $actedBy): void

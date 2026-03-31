@@ -13,17 +13,17 @@ class Admin extends BaseController
         $apptModel = new AppointmentModel();
         $userModel = new UserModel();
 
-        $today = date('Y-m-d');
+        $today    = date('Y-m-d');
         $allAppts = $apptModel->getWithDetails();
 
         return view('admin/dashboard', [
-            'page'             => 'dashboard',
-            'total_today'      => count(array_filter($allAppts, fn($a) => $a['appointment_date'] === $today)),
-            'pending_count'    => count(array_filter($allAppts, fn($a) => $a['status'] === 'pending')),
-            'serving_count'    => count(array_filter($allAppts, fn($a) => $a['status'] === 'serving')),
-            'completed_today'  => count(array_filter($allAppts, fn($a) => $a['appointment_date'] === $today && $a['status'] === 'completed')),
-            'total_patients'   => $userModel->where('role', 'patient')->countAllResults(),
-            'recent_appts'     => array_slice($allAppts, 0, 10),
+            'page'            => 'dashboard',
+            'total_today'     => count(array_filter($allAppts, fn($a) => $a['appointment_date'] === $today)),
+            'pending_count'   => count(array_filter($allAppts, fn($a) => $a['status'] === 'pending')),
+            'serving_count'   => count(array_filter($allAppts, fn($a) => $a['status'] === 'serving')),
+            'completed_today' => count(array_filter($allAppts, fn($a) => $a['appointment_date'] === $today && $a['status'] === 'completed')),
+            'total_patients'  => $userModel->where('role', 'patient')->countAllResults(),
+            'recent_appts'    => array_slice($allAppts, 0, 10),
         ]);
     }
 
@@ -38,8 +38,8 @@ class Admin extends BaseController
 
     public function updateStatus()
     {
-        $id     = $this->request->getPost('id');
-        $status = $this->request->getPost('status');
+        $id      = $this->request->getPost('id');
+        $status  = $this->request->getPost('status');
         $allowed = ['pending', 'confirmed', 'in_queue', 'serving', 'completed', 'cancelled'];
 
         if (!in_array($status, $allowed)) {
@@ -64,10 +64,8 @@ class Admin extends BaseController
     public function nextQueue()
     {
         $model = new AppointmentModel();
-        // Mark currently serving as completed
         $model->where('status', 'serving')->set(['status' => 'completed'])->update();
 
-        // Get next in_queue
         $next = $model->where('appointment_date', date('Y-m-d'))
             ->whereIn('status', ['confirmed', 'in_queue'])
             ->orderBy('queue_number', 'ASC')
@@ -77,7 +75,8 @@ class Admin extends BaseController
             $model->update($next['id'], ['status' => 'serving']);
         }
 
-        return redirect()->to('/admin/queue')->with('success', $next ? 'Now serving #' . $next['queue_number'] : 'Queue is empty.');
+        return redirect()->to('/admin/queue')
+            ->with('success', $next ? 'Now serving #' . $next['queue_number'] : 'Queue is empty.');
     }
 
     public function users()
@@ -146,5 +145,43 @@ class Admin extends BaseController
         $model->delete($id);
 
         return redirect()->back()->with('success', 'Appointment deleted successfully.');
+    }
+
+    public function display()
+    {
+        $model = new AppointmentModel();
+        $today = date('Y-m-d');
+
+        $serving = $model
+            ->select('appointments.*, services.name as service_name')
+            ->join('services', 'services.id = appointments.service_id', 'left')
+            ->where('appointment_date', $today)
+            ->where('status', 'serving')
+            ->first();
+
+        $queue = $model
+            ->select('appointments.*, services.name as service_name')
+            ->join('services', 'services.id = appointments.service_id', 'left')
+            ->where('appointment_date', $today)
+            ->whereNotIn('status', ['completed', 'cancelled'])
+            ->orderBy('queue_number', 'ASC')
+            ->findAll();
+
+        $waiting = $model
+            ->where('appointment_date', $today)
+            ->whereIn('status', ['confirmed', 'in_queue', 'pending'])
+            ->countAllResults();
+
+        $completed = $model
+            ->where('appointment_date', $today)
+            ->where('status', 'completed')
+            ->countAllResults();
+
+        return view('User/queue_display', [
+            'serving'   => $serving,
+            'queue'     => $queue,
+            'waiting'   => $waiting,
+            'completed' => $completed,
+        ]);
     }
 }
