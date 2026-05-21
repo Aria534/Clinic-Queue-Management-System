@@ -162,6 +162,7 @@
       background: rgba(255,255,255,0.05);
       border-top: 1px solid rgba(255,255,255,0.08);
       backdrop-filter: blur(12px);
+      gap: 1.5rem;
     }
     .stats { display: flex; gap: 2.5rem; }
     .stat-item { display: flex; flex-direction: column; align-items: center; }
@@ -171,7 +172,42 @@
     .stat-serving   .stat-val { color: #f0a0d8; }
     .stat-completed .stat-val { color: rgba(255,255,255,0.55); }
 
-    .refresh-note { font-size: .88rem; color: rgba(255,255,255,0.35); display: flex; align-items: center; gap: 6px; }
+    /* ── PER-SERVICE BREAKDOWN ── */
+    .service-breakdown {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+      flex: 1;
+      justify-content: center;
+    }
+    .svc-badge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      padding: .4rem 1.1rem;
+      min-width: 90px;
+    }
+    .svc-badge-val {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2.2rem;
+      color: #d8a8f8;
+      line-height: 1;
+    }
+    .svc-badge-lbl {
+      font-size: .68rem;
+      color: rgba(255,255,255,0.4);
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      text-align: center;
+      margin-top: 3px;
+      line-height: 1.3;
+    }
+
+    .refresh-note { font-size: .88rem; color: rgba(255,255,255,0.35); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
     .spin { animation: spin 2s linear infinite; display: inline-block; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -235,6 +271,9 @@
       <span class="stat-lbl">Completed</span>
     </div>
   </div>
+
+  <div class="service-breakdown" id="service-breakdown"></div>
+
   <div class="refresh-note">
     <i class="bi bi-arrow-repeat spin"></i> Auto-refreshes every 5 seconds
   </div>
@@ -302,6 +341,19 @@ function fetchQueue() {
                 <div class="qs-svc">${q.service_name ?? ''}</div>
               </div>
             </div>`).join('');
+
+      // Per-service breakdown badges
+      const breakdown = document.getElementById('service-breakdown');
+      if (data.stats?.by_service?.length) {
+        breakdown.innerHTML = data.stats.by_service.map(s => `
+          <div class="svc-badge">
+            <span class="svc-badge-val">${s.waiting}</span>
+            <span class="svc-badge-lbl">${s.service_name}<br>waiting</span>
+          </div>
+        `).join('');
+      } else {
+        breakdown.innerHTML = '';
+      }
     })
     .catch(() => {});
 }
