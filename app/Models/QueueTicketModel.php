@@ -75,12 +75,27 @@ class QueueTicketModel extends Model
     // ----------------------------------------------------------------
     public function getTodayStats(): array
     {
-        $today   = date('Y-m-d');
+        $today     = date('Y-m-d');
         $waiting   = $this->where('date', $today)->where('status', 'waiting')->countAllResults();
         $serving   = $this->where('date', $today)->where('status', 'serving')->countAllResults();
         $completed = $this->where('date', $today)->where('status', 'completed')->countAllResults();
         $total     = $this->where('date', $today)->countAllResults();
 
-        return compact('waiting', 'serving', 'completed', 'total');
+        // Per-service breakdown
+        $db         = \Config\Database::connect();
+        $by_service = $db->query("
+            SELECT
+                s.name AS service_name,
+                SUM(qt.status = 'waiting')   AS waiting,
+                SUM(qt.status = 'serving')   AS serving,
+                SUM(qt.status = 'completed') AS completed
+            FROM queue_tickets qt
+            JOIN services s ON s.id = qt.service_id
+            WHERE qt.date = ?
+            GROUP BY s.id, s.name
+            ORDER BY s.name
+        ", [$today])->getResultArray();
+
+        return compact('waiting', 'serving', 'completed', 'total', 'by_service');
     }
 }
